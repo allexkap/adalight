@@ -6,7 +6,7 @@
 
 #include <FastLED.h>
 
-const char* prefix = "Ada\n";
+const char prefix[] = "Ada\n";
 CRGB leds[NUM_LEDS];
 
 
