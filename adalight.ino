@@ -2,6 +2,7 @@
 #define DI_PIN 2
 
 #define CURRENT_LIMIT 0
+#define OFF_TIMEOUT 1
 
 
 #include <FastLED.h>
@@ -10,8 +11,16 @@ const char prefix[] = "Ada\n";
 CRGB leds[NUM_LEDS];
 
 
-int blocking_serial_read(){
-  while (!Serial.available());
+int blocking_serial_read() {
+  static unsigned long last_act = 0;
+  while (!Serial.available()) {
+    if (millis() - last_act > OFF_TIMEOUT * 1000) {
+      FastLED.clear();
+      FastLED.show();
+      while (!Serial.available());
+    }
+  }
+  last_act = millis();
   return Serial.read();
 }
 
@@ -32,7 +41,6 @@ void wait_ada() {
 void recv_ada() {
   memset(leds, 0, NUM_LEDS * sizeof(struct CRGB));
   for (int i = 0; i < NUM_LEDS; i++) {
-    byte r, g, b;
     leds[i].r = blocking_serial_read();
     leds[i].g = blocking_serial_read();
     leds[i].b = blocking_serial_read();
@@ -43,7 +51,8 @@ void recv_ada() {
 
 void setup() {
   FastLED.addLeds<WS2812, DI_PIN, GRB>(leds, NUM_LEDS);
-  if (CURRENT_LIMIT > 0) FastLED.setMaxPowerInVoltsAndMilliamps(5, CURRENT_LIMIT);
+  if (CURRENT_LIMIT > 0)
+    FastLED.setMaxPowerInVoltsAndMilliamps(5, CURRENT_LIMIT);
   Serial.begin(115200);
   Serial.print(prefix);
 }
